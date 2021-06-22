@@ -4,6 +4,7 @@ import numpy as np
 from functools import reduce
 import torch
 from onpolicy.runner.shared.base_runner import Runner
+from onpolicy.algorithms.utils.darnet import DarNet
 
 def _t2n(x):
     return x.detach().cpu().numpy()
@@ -12,6 +13,8 @@ class SMACRunner(Runner):
     """Runner class to perform training, evaluation. and data collection for SMAC. See parent class for details."""
     def __init__(self, config):
         super(SMACRunner, self).__init__(config)
+        rep = DarNet(self.num_agents, 5)
+        self.rep = rep
 
     def run(self):
         self.warmup()   
@@ -32,6 +35,8 @@ class SMACRunner(Runner):
                     
                 # Obser reward and next obs
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
+
+                obs = self.rep.to(self.device).forward(obs)
 
                 data = obs, share_obs, rewards, dones, infos, available_actions, \
                        values, actions, action_log_probs, \
@@ -98,6 +103,9 @@ class SMACRunner(Runner):
     def warmup(self):
         # reset env
         obs, share_obs, available_actions = self.envs.reset()
+
+        #obs = self.rep.to(self.device).forward(obs)
+        obs = self.rep.to(self.device).forward(obs)
 
         # replay buffer
         if not self.use_centralized_V:
@@ -173,6 +181,7 @@ class SMACRunner(Runner):
 
         while True:
             self.trainer.prep_rollout()
+            eval_obs = self.rep.to(self.device).forward(eval_obs)
             eval_actions, eval_rnn_states = \
                 self.trainer.policy.act(np.concatenate(eval_obs),
                                         np.concatenate(eval_rnn_states),

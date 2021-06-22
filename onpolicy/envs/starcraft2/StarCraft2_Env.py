@@ -1646,6 +1646,7 @@ class StarCraft2Env(MultiAgentEnv):
             timestep_feats = 1
             all_feats += timestep_feats
 
+        all_feats = 20
         return [all_feats * self.stacked_frames if self.use_stacked_frames else all_feats, [n_allies, n_ally_feats], [n_enemies, n_enemy_feats], [1, move_feats], [1, own_feats+agent_id_feats+timestep_feats]]
 
     def get_state_size(self):

@@ -84,7 +84,8 @@ def main(args):
         raise NotImplementedError
 
     # cuda
-    if all_args.cuda and torch.cuda.is_available():
+    cudaon = True
+    if cudaon and all_args.cuda and torch.cuda.is_available():
         print("choose to use gpu...")
         device = torch.device("cuda:0")
         torch.set_num_threads(all_args.n_training_threads)
