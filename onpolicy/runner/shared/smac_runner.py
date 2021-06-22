@@ -32,11 +32,13 @@ class SMACRunner(Runner):
             for step in range(self.episode_length):
                 # Sample actions
                 values, actions, action_log_probs, rnn_states, rnn_states_critic = self.collect(step)
-                    
+
                 # Obser reward and next obs
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
+                available_actions = available_actions[:,:,:6]
 
                 obs = self.rep.to(self.device).forward(obs)
+                share_obs = obs
 
                 data = obs, share_obs, rewards, dones, infos, available_actions, \
                        values, actions, action_log_probs, \
@@ -106,6 +108,8 @@ class SMACRunner(Runner):
 
         #obs = self.rep.to(self.device).forward(obs)
         obs = self.rep.to(self.device).forward(obs)
+        available_actions = available_actions[:,:,:6]
+        share_obs = obs
 
         # replay buffer
         if not self.use_centralized_V:
@@ -182,6 +186,7 @@ class SMACRunner(Runner):
         while True:
             self.trainer.prep_rollout()
             eval_obs = self.rep.to(self.device).forward(eval_obs)
+            eval_available_actions = eval_available_actions[:,:,:6]
             eval_actions, eval_rnn_states = \
                 self.trainer.policy.act(np.concatenate(eval_obs),
                                         np.concatenate(eval_rnn_states),

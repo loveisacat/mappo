@@ -318,7 +318,8 @@ class StarCraft2Env(MultiAgentEnv):
         self.observation_space = []
         self.share_observation_space = []
         for i in range(self.n_agents):
-            self.action_space.append(Discrete(self.n_actions))
+            #self.action_space.append(Discrete(self.n_actions))
+            self.action_space.append(Discrete(6))
             self.observation_space.append(self.get_obs_size())
             self.share_observation_space.append(self.get_state_size())
 
@@ -1677,6 +1678,7 @@ class StarCraft2Env(MultiAgentEnv):
                 timestep_feats = 1
                 all_feats += timestep_feats
 
+            all_feats = 20
             return [all_feats * self.stacked_frames if self.use_stacked_frames else all_feats, [n_allies, n_ally_feats], [n_enemies, n_enemy_feats], [1, move_feats], [1, own_feats+agent_id_feats+timestep_feats]]
 
         
