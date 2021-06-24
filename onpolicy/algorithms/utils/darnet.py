@@ -16,12 +16,14 @@ class DarNet(nn.Module):
         self.n_agent = agent_num
         self.n_enemy = agent_num
         self.n_ally = agent_num
-        #heads must be 1,2,3,4 ... which can be divided by (5 + 19)
+        #heads must be 1,2,3,4 ... which can be divided by (5 + 5 + 6)
         self.heads = 1
         self.device = device
 
         #Init the attention encoder
         self.dyn_attention = Transformer(self.enemy_shape + self.ally_shape + self.n_actions, self.enemy_shape + self.ally_shape + self.n_actions, self.heads)
+        #Init the simple NN encoder
+        #self.fc_net = nn.Linear(self.enemy_shape + self.ally_shape + self.n_actions, self.enemy_shape + self.ally_shape + self.n_actions)
          
 
     def forward(self, inputs):
@@ -43,6 +45,7 @@ class DarNet(nn.Module):
 
         for j in range(dyn_inputs.shape[0]):
           k_list = [F.relu(self.dyn_attention(dyn_inputs[j][i])) for i in range(self.n_agent)]
+          #k_list = [F.relu(self.fc_net(dyn_inputs[j][i])) for i in range(self.n_agent)]
           #For sum aggregate
           x_sum = torch.zeros_like(k_list[0])
           for i in range(self.n_agent):
