@@ -6,7 +6,7 @@ from .transformer import Transformer
 
 #This is the Dynamic Attention Representation Network(DarNet)
 class DarNet(nn.Module):
-    def __init__(self, agent_num, output_shape):
+    def __init__(self, agent_num, output_shape, device):
         super(DarNet, self).__init__()
         self.enemy_shape = 5
         self.ally_shape = 5
@@ -16,7 +16,9 @@ class DarNet(nn.Module):
         self.n_agent = agent_num
         self.n_enemy = agent_num
         self.n_ally = agent_num
-        self.heads = 4
+        #heads must be 1,2,3,4 ... which can be divided by (5 + 19)
+        self.heads = 1
+        self.device = device
 
         #Init the attention encoder
         self.dyn_attention = Transformer(self.enemy_shape + self.ally_shape + self.n_actions, self.enemy_shape + self.ally_shape + self.n_actions, self.heads)
@@ -37,6 +39,7 @@ class DarNet(nn.Module):
 
         dyn_inputs = torch.from_numpy(dyn_inputs)
         dyn_outputs = torch.empty([dyn_inputs.shape[0],dyn_inputs.shape[1],self.ally_shape + self.enemy_shape + self.n_actions])
+        dyn_inputs = dyn_inputs.to(self.device)
 
         for j in range(dyn_inputs.shape[0]):
           k_list = [F.relu(self.dyn_attention(dyn_inputs[j][i])) for i in range(self.n_agent)]

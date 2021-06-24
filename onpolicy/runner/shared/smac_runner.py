@@ -13,7 +13,7 @@ class SMACRunner(Runner):
     """Runner class to perform training, evaluation. and data collection for SMAC. See parent class for details."""
     def __init__(self, config):
         super(SMACRunner, self).__init__(config)
-        rep = DarNet(self.num_agents, 5)
+        rep = DarNet(self.num_agents, 5, self.device)
         self.rep = rep
 
     def run(self):
@@ -38,6 +38,7 @@ class SMACRunner(Runner):
                 available_actions = available_actions[:,:,:6]
 
                 obs = self.rep.to(self.device).forward(obs)
+                #obs = self.rep.forward(obs)
                 share_obs = obs
 
                 data = obs, share_obs, rewards, dones, infos, available_actions, \
@@ -106,7 +107,8 @@ class SMACRunner(Runner):
         # reset env
         obs, share_obs, available_actions = self.envs.reset()
 
-        #obs = self.rep.to(self.device).forward(obs)
+        #obs = self.rep.forward(obs)
+            
         obs = self.rep.to(self.device).forward(obs)
         available_actions = available_actions[:,:,:6]
         share_obs = obs
@@ -186,6 +188,8 @@ class SMACRunner(Runner):
         while True:
             self.trainer.prep_rollout()
             eval_obs = self.rep.to(self.device).forward(eval_obs)
+            #eval_obs = self.rep.forward(eval_obs)
+            
             eval_available_actions = eval_available_actions[:,:,:6]
             eval_actions, eval_rnn_states = \
                 self.trainer.policy.act(np.concatenate(eval_obs),
