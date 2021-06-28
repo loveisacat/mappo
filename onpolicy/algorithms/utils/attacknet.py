@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 from .transformer import Transformer
+import random
 
 #This is the Attack action Representation Network(AttackNet)
 #We encode the attack action with 7-th bit of action
@@ -24,38 +25,32 @@ class AttackNet(nn.Module):
         self.fc_net = nn.Linear(1,1)
          
 
-    def forward(self, inputs):
-        print("IIIIIIIIIIIIIII:")
-        print(inputs.shape)
-        exit(0)
-        #The original inputs structure is : move_direction, agent_num * enemy_shape, (agent_num - 1) * ally_shape, own_shape,  agent_num
-        enemy_inputs = inputs[:,:,self.move_direction:self.move_direction + self.enemy_shape * self.n_enemy]
-        enemy_inputs = enemy_inputs.reshape(enemy_inputs.shape[0],enemy_inputs.shape[1],self.n_enemy,self.enemy_shape)
-        ally_inputs = inputs[:,:,self.move_direction + self.enemy_shape * self.n_enemy:self.move_direction + self.enemy_shape * self.n_enemy + (self.ally_shape+self.n_actions+self.n_agent) * self.n_ally]
-        ally_inputs = ally_inputs.reshape(ally_inputs.shape[0], ally_inputs.shape[1], self.n_ally, self.ally_shape+self.n_actions+self.n_agent)
-        
-        dyn_inputs = inputs[:,:,self.move_direction:self.move_direction + self.enemy_shape * self.n_enemy + (self.ally_shape + self.n_actions + self.n_agent) * self.n_ally]
-        dyn_inputs = dyn_inputs.reshape(dyn_inputs.shape[0], dyn_inputs.shape[1], self.n_agent, self.ally_shape + self.enemy_shape + self.n_actions + self.n_agent)
-        dyn_inputs = dyn_inputs[:,:,:,:(self.enemy_shape+self.ally_shape+self.n_actions)]
-        #enemy_inputs = [F.relu(self.enemy_attention(enemy_inputs[i])) for i in range(self.n_enemy)]
-        #ally_inputs = [F.relu(self.ally_attention(ally_inputs[i])) for i in range(self.n_ally)]
+    def forward(self, inputs, states):
+        inputs = torch.from_numpy(inputs).float()
+        states = torch.from_numpy(states).float()
+        for i in range (0,len(inputs)):
+            for j in range (0,len(inputs[i])):
+                if inputs[i][j] == 6:
+                    #output = F.relu(self.fc_net(inputs[i][j]))
+                    output = F.sigmoid(self.fc_net(states))
+                    if(output<=0.3333):
+                        output = 0
+                    elif(output<=0.6666):
+                        output = 1
+                    else:
+                        output = 2
+                    #output = random.randint(0, self.n_agent - 1)
+                    inputs[i][j] = inputs[i][j] + output
+        inputs = inputs.detach().numpy()
 
-        dyn_inputs = torch.from_numpy(dyn_inputs)
-        dyn_outputs = torch.empty([dyn_inputs.shape[0],dyn_inputs.shape[1],self.ally_shape + self.enemy_shape + self.n_actions])
-        dyn_inputs = dyn_inputs.to(self.device)
+        return inputs
+    def backward(self, inputs):
+        for i in range (0,len(inputs)):
+            for j in range (0,len(inputs[i])):
+                if inputs[i][j] >= 6:
+                    inputs[i][j] = 6
+        return inputs
 
-        for j in range(dyn_inputs.shape[0]):
-          k_list = [F.relu(self.dyn_attention(dyn_inputs[j][i])) for i in range(self.n_agent)]
-          #k_list = [F.relu(self.fc_net(dyn_inputs[j][i])) for i in range(self.n_agent)]
-          #For sum aggregate
-          x_sum = torch.zeros_like(k_list[0])
-          for i in range(self.n_agent):
-              x_sum += k_list[i]
-          dyn_outputs[j] = x_sum
-        dyn_outputs = dyn_outputs.detach().numpy()
-        dyn_outputs = np.concatenate((inputs[:,:,:self.move_direction],dyn_outputs),axis=2)
-
-        return dyn_outputs
 
 if __name__ == '__main__':
     pass

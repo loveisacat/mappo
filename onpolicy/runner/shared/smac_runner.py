@@ -17,6 +17,7 @@ class SMACRunner(Runner):
         rep = DarNet(self.num_agents, 5, self.device)
         atta = AttackNet(self.num_agents, self.device)
         self.rep = rep
+        self.atta = atta
 
     def run(self):
         self.warmup()   
@@ -37,10 +38,12 @@ class SMACRunner(Runner):
                 
                
                 # Represent the 7th action which is attack action
-                actions = self.atta.to(self.device).forward(actions)
+                actions = self.atta.to(self.device).forward(actions, rnn_states)
                 
                 # Obser reward and next obs
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
+
+                actions = self.atta.to(self.device).backward(actions)
                 available_actions = available_actions[:,:,:7]
 
                 obs = self.rep.to(self.device).forward(obs)
@@ -205,9 +208,13 @@ class SMACRunner(Runner):
                                         deterministic=True)
             eval_actions = np.array(np.split(_t2n(eval_actions), self.n_eval_rollout_threads))
             eval_rnn_states = np.array(np.split(_t2n(eval_rnn_states), self.n_eval_rollout_threads))
-            
+           
+
+            eva_actions = self.atta.to(self.device).forward(eval_actions, eval_rnn_states)
             # Obser reward and next obs
             eval_obs, eval_share_obs, eval_rewards, eval_dones, eval_infos, eval_available_actions = self.eval_envs.step(eval_actions)
+
+            eva_actions = self.atta.to(self.device).backward(eval_actions)
             one_episode_rewards.append(eval_rewards)
 
             eval_dones_env = np.all(eval_dones, axis=1)
