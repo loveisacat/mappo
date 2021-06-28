@@ -5,6 +5,7 @@ from functools import reduce
 import torch
 from onpolicy.runner.shared.base_runner import Runner
 from onpolicy.algorithms.utils.darnet import DarNet
+from onpolicy.algorithms.utils.attacknet import AttackNet
 
 def _t2n(x):
     return x.detach().cpu().numpy()
@@ -14,6 +15,7 @@ class SMACRunner(Runner):
     def __init__(self, config):
         super(SMACRunner, self).__init__(config)
         rep = DarNet(self.num_agents, 5, self.device)
+        atta = AttackNet(self.num_agents, self.device)
         self.rep = rep
 
     def run(self):
@@ -32,10 +34,14 @@ class SMACRunner(Runner):
             for step in range(self.episode_length):
                 # Sample actions
                 values, actions, action_log_probs, rnn_states, rnn_states_critic = self.collect(step)
-
+                
+               
+                # Represent the 7th action which is attack action
+                actions = self.atta.to(self.device).forward(actions)
+                
                 # Obser reward and next obs
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
-                available_actions = available_actions[:,:,:6]
+                available_actions = available_actions[:,:,:7]
 
                 obs = self.rep.to(self.device).forward(obs)
                 #obs = self.rep.forward(obs)
@@ -110,7 +116,7 @@ class SMACRunner(Runner):
         #obs = self.rep.forward(obs)
             
         obs = self.rep.to(self.device).forward(obs)
-        available_actions = available_actions[:,:,:6]
+        available_actions = available_actions[:,:,:7]
         share_obs = obs
 
         # replay buffer
@@ -190,7 +196,7 @@ class SMACRunner(Runner):
             eval_obs = self.rep.to(self.device).forward(eval_obs)
             #eval_obs = self.rep.forward(eval_obs)
             
-            eval_available_actions = eval_available_actions[:,:,:6]
+            eval_available_actions = eval_available_actions[:,:,:7]
             eval_actions, eval_rnn_states = \
                 self.trainer.policy.act(np.concatenate(eval_obs),
                                         np.concatenate(eval_rnn_states),

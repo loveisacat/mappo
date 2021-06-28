@@ -319,7 +319,7 @@ class StarCraft2Env(MultiAgentEnv):
         self.share_observation_space = []
         for i in range(self.n_agents):
             #self.action_space.append(Discrete(self.n_actions))
-            self.action_space.append(Discrete(6))
+            self.action_space.append(Discrete(7))
             self.observation_space.append(self.get_obs_size())
             self.share_observation_space.append(self.get_state_size())
 
