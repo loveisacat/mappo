@@ -22,24 +22,33 @@ class AttackNet(nn.Module):
         #Init the attack representation  decoder
         #self.dyn_attention = Transformer(self.enemy_shape + self.ally_shape + self.n_actions, self.enemy_shape + self.ally_shape + self.n_actions, self.heads)
         #Init the simple NN encoder
-        self.fc_net = nn.Linear(1,1)
+        self.fc_net = nn.Linear(192,1)
          
 
-    def forward(self, inputs, states):
+    def forward(self, inputs, states, step):
         inputs = torch.from_numpy(inputs).float()
         states = torch.from_numpy(states).float()
         for i in range (0,len(inputs)):
             for j in range (0,len(inputs[i])):
                 if inputs[i][j] == 6:
-                    #output = F.relu(self.fc_net(inputs[i][j]))
-                    output = F.sigmoid(self.fc_net(states))
-                    if(output<=0.3333):
-                        output = 0
-                    elif(output<=0.6666):
-                        output = 1
+                    if step < 50000:
+                      output = random.randint(0, self.n_agent - 1)
                     else:
-                        output = 2
-                    #output = random.randint(0, self.n_agent - 1)
+                        s_flat = torch.flatten(states)
+                        if(len(s_flat)>192):
+                          s_reshape = s_flat.reshape(7,192)
+                          output = F.sigmoid(self.fc_net(s_reshape[i]))
+                        else:
+                          output = F.sigmoid(self.fc_net(s_flat))
+                        if(output<=0.3333):
+                           #print("output0:",output)
+                           output = 0
+                        elif(output<=0.6666):
+                           #print("output1:",output)
+                           output = 1
+                        else:
+                           #print("output2:",output)
+                           output = 2
                     inputs[i][j] = inputs[i][j] + output
         inputs = inputs.detach().numpy()
 

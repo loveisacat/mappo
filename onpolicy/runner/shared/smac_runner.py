@@ -35,10 +35,9 @@ class SMACRunner(Runner):
             for step in range(self.episode_length):
                 # Sample actions
                 values, actions, action_log_probs, rnn_states, rnn_states_critic = self.collect(step)
-                
-               
+
                 # Represent the 7th action which is attack action
-                actions = self.atta.to(self.device).forward(actions, rnn_states)
+                actions = self.atta.to(self.device).forward(actions, rnn_states, 99)
                 
                 # Obser reward and next obs
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
@@ -210,7 +209,7 @@ class SMACRunner(Runner):
             eval_rnn_states = np.array(np.split(_t2n(eval_rnn_states), self.n_eval_rollout_threads))
            
 
-            eva_actions = self.atta.to(self.device).forward(eval_actions, eval_rnn_states)
+            eva_actions = self.atta.to(self.device).forward(eval_actions, eval_rnn_states, 99)
             # Obser reward and next obs
             eval_obs, eval_share_obs, eval_rewards, eval_dones, eval_infos, eval_available_actions = self.eval_envs.step(eval_actions)
 
