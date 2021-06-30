@@ -37,7 +37,7 @@ class SMACRunner(Runner):
                 values, actions, action_log_probs, rnn_states, rnn_states_critic = self.collect(step)
 
                 # Represent the 7th action which is attack action
-                actions = self.atta.to(self.device).forward(actions, rnn_states, 99)
+                #actions = self.atta.to(self.device).forward(actions, rnn_states, 99)
                 
                 # Obser reward and next obs
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
@@ -46,7 +46,7 @@ class SMACRunner(Runner):
                 available_actions = available_actions[:,:,:7]
 
                 obs = self.rep.to(self.device).forward(obs)
-                #obs = self.rep.forward(obs)
+                
                 share_obs = obs
 
                 data = obs, share_obs, rewards, dones, infos, available_actions, \
@@ -115,7 +115,6 @@ class SMACRunner(Runner):
         # reset env
         obs, share_obs, available_actions = self.envs.reset()
 
-        #obs = self.rep.forward(obs)
             
         obs = self.rep.to(self.device).forward(obs)
         available_actions = available_actions[:,:,:7]
@@ -145,6 +144,10 @@ class SMACRunner(Runner):
         action_log_probs = np.array(np.split(_t2n(action_log_prob), self.n_rollout_threads))
         rnn_states = np.array(np.split(_t2n(rnn_state), self.n_rollout_threads))
         rnn_states_critic = np.array(np.split(_t2n(rnn_state_critic), self.n_rollout_threads))
+
+        # Represent the 7th action which is attack action
+        actions = self.atta.to(self.device).forward(actions, self.buffer.obs[step])
+                
 
         return values, actions, action_log_probs, rnn_states, rnn_states_critic
 
@@ -196,7 +199,6 @@ class SMACRunner(Runner):
         while True:
             self.trainer.prep_rollout()
             eval_obs = self.rep.to(self.device).forward(eval_obs)
-            #eval_obs = self.rep.forward(eval_obs)
             
             eval_available_actions = eval_available_actions[:,:,:7]
             eval_actions, eval_rnn_states = \
@@ -208,8 +210,8 @@ class SMACRunner(Runner):
             eval_actions = np.array(np.split(_t2n(eval_actions), self.n_eval_rollout_threads))
             eval_rnn_states = np.array(np.split(_t2n(eval_rnn_states), self.n_eval_rollout_threads))
            
+            eva_actions = self.atta.to(self.device).forward(eval_actions, eval_obs)
 
-            eva_actions = self.atta.to(self.device).forward(eval_actions, eval_rnn_states, 99)
             # Obser reward and next obs
             eval_obs, eval_share_obs, eval_rewards, eval_dones, eval_infos, eval_available_actions = self.eval_envs.step(eval_actions)
 

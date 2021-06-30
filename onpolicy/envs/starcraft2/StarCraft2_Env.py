@@ -618,8 +618,8 @@ class StarCraft2Env(MultiAgentEnv):
     def get_agent_action(self, a_id, action):
         """Construct the action for agent a_id."""
         avail_actions = self.get_avail_agent_actions(a_id)
-        assert avail_actions[action] == 1, \
-            "Agent {} cannot perform action {}".format(a_id, action)
+        #assert avail_actions[action] == 1, \
+        #    "Agent {} cannot perform action {}".format(a_id, action)
 
         unit = self.get_unit_by_id(a_id)
         tag = unit.tag
