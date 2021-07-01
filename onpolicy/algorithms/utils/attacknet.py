@@ -24,14 +24,40 @@ class AttackNet(nn.Module):
         #Init the attack representation  decoder
         #self.dyn_attention = Transformer(self.enemy_shape + self.ally_shape + self.n_actions, self.enemy_shape + self.ally_shape + self.n_actions, self.heads)
         #Init the simple NN encoder
-        self.fc_net = nn.Linear(60,1)
+        self.fc_net = nn.Linear(64,1)
          
 
     def forward(self, inputs, states):
-        inputs = torch.from_numpy(inputs).float()
-        states = torch.from_numpy(states).float()
-        step = 111
+        #inputs = torch.from_numpy(inputs).float()
+        #states = torch.from_numpy(states).float()
         gap = s_min = s_max = 0
+        inputs_clone = inputs.clone()
+        count = 0
+        for ip in inputs:
+            if(ip == 6):
+                output = F.sigmoid(self.fc_net(states[count]))
+                a =  output.detach().numpy()
+                self.bset.add(a[0])
+                s_min = min(self.bset)
+                s_max = max(self.bset)
+                gap = (s_max - s_min) / 3
+                if(output <= s_min + gap):
+                    #print("output0:",output)
+                    output = 0
+                elif(output <= s_min + 2 * gap):
+                    #print("output1:",output)
+                    output = 1
+                else:
+                    #print("output2:",output)
+                    output = 2
+                
+                inputs_clone[count] = output + ip
+
+            else:
+                inputs_clone[count] = ip
+
+            count += 1
+        '''
         for i in range (0,len(inputs)):
             for j in range (0,len(inputs[i])):
                 if inputs[i][j] == 6:
@@ -65,8 +91,8 @@ class AttackNet(nn.Module):
                            output = 2
                     inputs[i][j] = inputs[i][j] + output
         inputs = inputs.detach().numpy()
-
-        return inputs
+        '''
+        return inputs_clone
     def backward(self, inputs):
         for i in range (0,len(inputs)):
             for j in range (0,len(inputs[i])):

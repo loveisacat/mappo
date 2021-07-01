@@ -1,6 +1,7 @@
 from .distributions import Bernoulli, Categorical, DiagGaussian
 import torch
 import torch.nn as nn
+from onpolicy.algorithms.utils.attacknet import AttackNet
 
 class ACTLayer(nn.Module):
     """
@@ -10,10 +11,14 @@ class ACTLayer(nn.Module):
     :param use_orthogonal: (bool) whether to use orthogonal initialization.
     :param gain: (float) gain of the output layer of the network.
     """
-    def __init__(self, action_space, inputs_dim, use_orthogonal, gain):
+    def __init__(self, action_space, inputs_dim, use_orthogonal, gain, agent_num, device):
         super(ACTLayer, self).__init__()
         self.mixed_action = False
         self.multi_discrete = False
+        self.device = device
+        atta = AttackNet(agent_num, device)
+        self.atta = atta
+
 
         if action_space.__class__.__name__ == "Discrete":
             action_dim = action_space.n
@@ -78,6 +83,7 @@ class ACTLayer(nn.Module):
         else:
             action_logits = self.action_out(x, available_actions)
             actions = action_logits.mode() if deterministic else action_logits.sample() 
+            actions = self.atta.to(self.device).forward(actions, x)
             action_log_probs = action_logits.log_probs(actions)
         
         return actions, action_log_probs

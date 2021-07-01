@@ -4,6 +4,10 @@ import numpy as np
 import torch
 from tensorboardX import SummaryWriter
 from onpolicy.utils.shared_buffer import SharedReplayBuffer
+from onpolicy.algorithms.utils.darnet import DarNet
+from onpolicy.algorithms.utils.attacknet import AttackNet
+
+
 
 def _t2n(x):
     """Convert torch tensor to a numpy array."""
@@ -50,6 +54,13 @@ class Runner(object):
         # dir
         self.model_dir = self.all_args.model_dir
 
+        #darnet        
+        rep = DarNet(self.num_agents, 5, self.device)
+        atta = AttackNet(self.num_agents, self.device)
+        self.rep = rep
+        self.atta = atta
+
+
         if self.use_wandb:
             self.save_dir = str(wandb.run.dir)
             self.run_dir = str(wandb.run.dir)
@@ -75,6 +86,7 @@ class Runner(object):
                             self.envs.action_space[0],
                             device = self.device)
 
+        #self.model_dir = "/home/stephen/codebase/mappo/onpolicy/scripts/results/StarCraft2/3m/mappo/smac/run1/models"
         if self.model_dir is not None:
             self.restore()
 
@@ -126,8 +138,17 @@ class Runner(object):
 
     def save(self):
         """Save policy's actor and critic networks."""
+        """
+        for name in self.rep.state_dict():
+            print(name,'\t',self.rep.state_dict()[name].shape)
+        """
+        torch.save(self.rep.state_dict(), str(self.save_dir) + "/darnet.pt")
         policy_actor = self.trainer.policy.actor
         torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
+        for name in policy_actor.state_dict():
+            print(name,'\t',policy_actor.state_dict()[name].shape)
+        exit(0)
+
         policy_critic = self.trainer.policy.critic
         torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic.pt")
 
@@ -135,6 +156,7 @@ class Runner(object):
         """Restore policy's networks from a saved model."""
         policy_actor_state_dict = torch.load(str(self.model_dir) + '/actor.pt')
         self.policy.actor.load_state_dict(policy_actor_state_dict)
+        self.rep.load_state_dict(torch.load(str(self.model_dir) + '/darnet.pt'))
         if not self.all_args.use_render:
             policy_critic_state_dict = torch.load(str(self.model_dir) + '/critic.pt')
             self.policy.critic.load_state_dict(policy_critic_state_dict)
