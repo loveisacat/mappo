@@ -24,7 +24,9 @@ class AttackNet(nn.Module):
         #Init the attack representation  decoder
         #self.dyn_attention = Transformer(self.enemy_shape + self.ally_shape + self.n_actions, self.enemy_shape + self.ally_shape + self.n_actions, self.heads)
         #Init the simple NN encoder
-        self.fc_net = nn.Linear(64,1)
+        self.fc_net0 = nn.Linear(64,32)
+        self.fc_net1 = nn.Linear(32,16)
+        self.fc_net2 = nn.Linear(16,1)
          
 
     def forward(self, inputs, states):
@@ -34,9 +36,11 @@ class AttackNet(nn.Module):
         inputs_clone = inputs.clone()
         count = 0
         for ip in inputs:
-            if(ip == 6):
-                output = F.sigmoid(self.fc_net(states[count]))
-                a =  output.detach().numpy()
+            if(ip >= 6):
+                x = self.fc_net0(states[count])
+                x_1 = self.fc_net1(x)
+                output = F.sigmoid(self.fc_net2(x_1))
+                a =  output.detach().cpu().numpy()
                 self.bset.add(a[0])
                 s_min = min(self.bset)
                 s_max = max(self.bset)
@@ -51,7 +55,7 @@ class AttackNet(nn.Module):
                     #print("output2:",output)
                     output = 2
                 
-                inputs_clone[count] = output + ip
+                inputs_clone[count] = output + 6
 
             else:
                 inputs_clone[count] = ip

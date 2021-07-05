@@ -44,8 +44,8 @@ class DarNet(nn.Module):
         dyn_inputs = dyn_inputs.to(self.device)
 
         for j in range(dyn_inputs.shape[0]):
-          #k_list = [F.relu(self.dyn_attention(dyn_inputs[j][i])) for i in range(self.n_agent)]
-          k_list = [F.relu(self.fc_net(dyn_inputs[j][i])) for i in range(self.n_agent)]
+          k_list = [F.relu(self.dyn_attention(dyn_inputs[j][i])) for i in range(self.n_agent)]
+          #k_list = [F.relu(self.fc_net(dyn_inputs[j][i])) for i in range(self.n_agent)]
           #For sum aggregate
           x_sum = torch.zeros_like(k_list[0])
           for i in range(self.n_agent):

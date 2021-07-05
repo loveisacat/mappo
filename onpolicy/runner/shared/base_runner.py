@@ -145,10 +145,11 @@ class Runner(object):
         torch.save(self.rep.state_dict(), str(self.save_dir) + "/darnet.pt")
         policy_actor = self.trainer.policy.actor
         torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
+        '''
         for name in policy_actor.state_dict():
             print(name,'\t',policy_actor.state_dict()[name].shape)
         exit(0)
-
+        '''
         policy_critic = self.trainer.policy.critic
         torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic.pt")
 
