@@ -56,9 +56,11 @@ class AttackNet(nn.Module):
                     output = 2
                 
                 inputs_clone[count] = output + 6
+                #print(inputs_clone[count], ip)
 
             else:
                 inputs_clone[count] = ip
+
 
             count += 1
         '''

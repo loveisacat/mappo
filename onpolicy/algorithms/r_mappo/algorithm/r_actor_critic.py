@@ -65,7 +65,17 @@ class R_Actor(nn.Module):
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
             actor_features, rnn_states = self.rnn(actor_features, rnn_states, masks)
 
-        actions, action_log_probs = self.act(actor_features, available_actions, deterministic)
+        split0, split1  = torch.split(available_actions, [6, 3], 1)
+        t0 = torch.zeros(len(available_actions),1)
+        split0 = torch.cat([split0, t0], 1)
+        #actions, action_log_probs = self.act(actor_features, available_actions, deterministic)
+        actions, action_log_probs = self.act(actor_features, split0, deterministic)
+        
+        print("11111:",actions)
+
+        actions_1, action_log_probs_1 = self.act(actor_features, split1, deterministic)
+
+        print("2222:",actions_1)
 
         return actions, action_log_probs, rnn_states
 

@@ -138,26 +138,31 @@ class Runner(object):
 
     def save(self):
         """Save policy's actor and critic networks."""
-        """
-        for name in self.rep.state_dict():
-            print(name,'\t',self.rep.state_dict()[name].shape)
-        """
+               
         torch.save(self.rep.state_dict(), str(self.save_dir) + "/darnet.pt")
         policy_actor = self.trainer.policy.actor
         torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
-        '''
+        ''' 
+        for name in self.rep.state_dict():
+            print(name,'\t',self.rep.state_dict()[name].shape)
+        
         for name in policy_actor.state_dict():
             print(name,'\t',policy_actor.state_dict()[name].shape)
+        
         exit(0)
         '''
         policy_critic = self.trainer.policy.critic
         torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic.pt")
 
+
     def restore(self):
         """Restore policy's networks from a saved model."""
+        '''
         policy_actor_state_dict = torch.load(str(self.model_dir) + '/actor.pt')
         self.policy.actor.load_state_dict(policy_actor_state_dict)
+        '''
         self.rep.load_state_dict(torch.load(str(self.model_dir) + '/darnet.pt'))
+        
         if not self.all_args.use_render:
             policy_critic_state_dict = torch.load(str(self.model_dir) + '/critic.pt')
             self.policy.critic.load_state_dict(policy_critic_state_dict)
