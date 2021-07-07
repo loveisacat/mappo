@@ -86,7 +86,7 @@ class R_Actor(nn.Module):
         for act in actions:
             if act >= 6:
                  actions[count] = actions_1[count] + actions[count]
-                 action_log_probs[count] = action_log_probs_1[count]
+                 #action_log_probs[count] = action_log_probs_1[count]
             count += 1
 
 
