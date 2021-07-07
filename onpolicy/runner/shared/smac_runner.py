@@ -42,8 +42,8 @@ class SMACRunner(Runner):
                 # Obser reward and next obs
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
 
-                #actions = self.atta.to(self.device).backward(actions)
-                #available_actions = available_actions[:,:,:7]
+                actions = self.atta.to(self.device).backward(actions)
+                available_actions = available_actions[:,:,:7]
 
                 obs = self.rep.to(self.device).forward(obs)
                 
@@ -108,7 +108,7 @@ class SMACRunner(Runner):
                 self.log_train(train_infos, total_num_steps)
 
             # eval
-            if episode % self.eval_interval == 0 and self.use_eval:
+            if False and episode % self.eval_interval == 0 and self.use_eval:
                 self.eval(total_num_steps)
 
     def warmup(self):
@@ -117,7 +117,7 @@ class SMACRunner(Runner):
 
             
         obs = self.rep.to(self.device).forward(obs)
-        #available_actions = available_actions[:,:,:7]
+        available_actions = available_actions[:,:,:7]
         share_obs = obs
 
         # replay buffer

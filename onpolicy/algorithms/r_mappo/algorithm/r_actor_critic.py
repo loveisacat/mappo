@@ -7,7 +7,7 @@ from onpolicy.algorithms.utils.rnn import RNNLayer
 from onpolicy.algorithms.utils.act import ACTLayer
 from onpolicy.algorithms.utils.popart import PopArt
 from onpolicy.utils.util import get_shape_from_obs_space
-
+from gym.spaces import Discrete
 
 class R_Actor(nn.Module):
     """
@@ -36,9 +36,16 @@ class R_Actor(nn.Module):
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
             self.rnn = RNNLayer(self.hidden_size, self.hidden_size, self._recurrent_N, self._use_orthogonal)
 
-        self.act = ACTLayer(action_space, self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
+        self.action_space0 = []
+        self.action_space0.append(Discrete(7))
+        self.action_space1 = []
+        self.action_space1.append(Discrete(3))
+        self.act = ACTLayer(self.action_space0[0], self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
+        self.act1 = ACTLayer(self.action_space1[0], self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
 
         self.to(device)
+        self.t0 = torch.zeros(21,1).to(device)
+        self.t3 = torch.zeros(21,3).to(device)
 
     def forward(self, obs, rnn_states, masks, available_actions=None, deterministic=False):
         """
@@ -65,17 +72,24 @@ class R_Actor(nn.Module):
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
             actor_features, rnn_states = self.rnn(actor_features, rnn_states, masks)
 
-        split0, split1  = torch.split(available_actions, [6, 3], 1)
-        t0 = torch.zeros(len(available_actions),1)
-        split0 = torch.cat([split0, t0], 1)
+        #split0, split1  = torch.split(available_actions, [6, 3], 1)
+        split0 = available_actions[:,0:7]
+        split1 = self.t3
+        #split0 = torch.cat([split0, self.t0], 1)
         #actions, action_log_probs = self.act(actor_features, available_actions, deterministic)
         actions, action_log_probs = self.act(actor_features, split0, deterministic)
         
-        print("11111:",actions)
 
-        actions_1, action_log_probs_1 = self.act(actor_features, split1, deterministic)
+        actions_1, action_log_probs_1 = self.act1(actor_features, split1, deterministic)
 
-        print("2222:",actions_1)
+        count = 0
+        for act in actions:
+            if act >= 6:
+                 actions[count] = actions_1[count] + actions[count]
+                 action_log_probs[count] = action_log_probs_1[count]
+            count += 1
+
+
 
         return actions, action_log_probs, rnn_states
 

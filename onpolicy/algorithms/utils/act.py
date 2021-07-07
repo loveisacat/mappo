@@ -16,8 +16,8 @@ class ACTLayer(nn.Module):
         self.mixed_action = False
         self.multi_discrete = False
         self.device = device
-        atta = AttackNet(agent_num, device)
-        self.atta = atta
+        #atta = AttackNet(agent_num, device)
+        #self.atta = atta
 
 
         if action_space.__class__.__name__ == "Discrete":
