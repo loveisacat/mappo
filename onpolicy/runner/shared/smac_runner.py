@@ -131,7 +131,7 @@ class SMACRunner(Runner):
     @torch.no_grad()
     def collect(self, step):
         self.trainer.prep_rollout()
-        value, action, action_log_prob, rnn_state, rnn_state_critic, attack, attack_log_probs \
+        value, action, action_log_prob, rnn_state, rnn_state_critic, attack, attack_log_prob \
             = self.trainer.policy.get_actions(np.concatenate(self.buffer.share_obs[step]),
                                             np.concatenate(self.buffer.obs[step]),
                                             np.concatenate(self.buffer.rnn_states[step]),
@@ -151,7 +151,7 @@ class SMACRunner(Runner):
         #actions = self.atta.to(self.device).forward(actions, self.buffer.obs[step])
                 
 
-        return values, actions, action_log_probs, rnn_states, rnn_states_critic
+        return values, actions, action_log_probs, rnn_states, rnn_states_critic, attacks, attack_log_probs
 
     def insert(self, data):
         obs, share_obs, rewards, dones, infos, available_actions, \
@@ -174,8 +174,7 @@ class SMACRunner(Runner):
         if not self.use_centralized_V:
             share_obs = obs
 
-        self.buffer.insert(share_obs, obs, rnn_states, rnn_states_critic,
-                           actions, action_log_probs, values, rewards, masks, bad_masks, active_masks, available_actions,attacks, attack_log_probs)
+        self.buffer.insert(share_obs, obs, rnn_states, rnn_states_critic, actions, action_log_probs, attacks, attack_log_probs, values, rewards, masks, bad_masks, active_masks, available_actions)
 
     def log_train(self, train_infos, total_num_steps):
         train_infos["average_step_rewards"] = np.mean(self.buffer.rewards)

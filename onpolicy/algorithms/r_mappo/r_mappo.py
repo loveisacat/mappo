@@ -102,7 +102,7 @@ class R_MAPPO():
         :return imp_weights: (torch.Tensor) importance sampling weights.
         """
         share_obs_batch, obs_batch, rnn_states_batch, rnn_states_critic_batch, actions_batch, attacks_batch,\
-        value_preds_batch, return_batch, masks_batch, active_masks_batch, old_action_log_probs_batch, 
+        value_preds_batch, return_batch, masks_batch, active_masks_batch, old_action_log_probs_batch,\
         old_attack_log_probs_batch,\
         adv_targ, available_actions_batch = sample
 
