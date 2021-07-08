@@ -40,12 +40,12 @@ class R_Actor(nn.Module):
         self.action_space0.append(Discrete(7))
         self.action_space1 = []
         self.action_space1.append(Discrete(3))
-        self.act = ACTLayer(self.action_space0[0], self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
+        self.act = ACTLayer(action_space, self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
         self.act1 = ACTLayer(self.action_space1[0], self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
 
         self.to(device)
-        self.t0 = torch.zeros(21,1).to(device)
-        self.t3 = torch.zeros(21,3).to(device)
+        #self.t0 = torch.zeros(21,1).to(device)
+        #self.t3 = torch.zeros(21,3).to(device)
 
     def forward(self, obs, rnn_states, masks, available_actions=None, deterministic=False):
         """
@@ -73,13 +73,16 @@ class R_Actor(nn.Module):
             actor_features, rnn_states = self.rnn(actor_features, rnn_states, masks)
 
         #split0, split1  = torch.split(available_actions, [6, 3], 1)
-        split0 = available_actions[:,0:7]
-        split1 = self.t3
+        #split0 = available_actions[:,0:7]
+        #split1 = self.t3
         #split0 = torch.cat([split0, self.t0], 1)
         #actions, action_log_probs = self.act(actor_features, available_actions, deterministic)
-        actions, action_log_probs = self.act(actor_features, split0, deterministic)
-        
+        if(len(available_actions[0])==7):
+            actions, action_log_probs = self.act(actor_features, available_actions, deterministic)
+        else:
+            actions, action_log_probs = self.act1(actor_features, available_actions, deterministic)
 
+        '''
         actions_1, action_log_probs_1 = self.act1(actor_features, split1, deterministic)
 
         count = 0
@@ -89,7 +92,7 @@ class R_Actor(nn.Module):
                  #action_log_probs[count] = action_log_probs_1[count]
             count += 1
 
-
+        '''
 
         return actions, action_log_probs, rnn_states
 

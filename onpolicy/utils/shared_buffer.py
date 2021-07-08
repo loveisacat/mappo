@@ -67,6 +67,11 @@ class SharedReplayBuffer(object):
             (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
         self.action_log_probs = np.zeros(
             (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
+        self.attacks = np.zeros(
+            (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
+        self.attack_log_probs = np.zeros(
+            (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
+
         self.rewards = np.zeros(
             (self.episode_length, self.n_rollout_threads, num_agents, 1), dtype=np.float32)
 
@@ -76,7 +81,8 @@ class SharedReplayBuffer(object):
 
         self.step = 0
 
-    def insert(self, share_obs, obs, rnn_states_actor, rnn_states_critic, actions, action_log_probs,
+    def insert(self, share_obs, obs, rnn_states_actor, rnn_states_critic, actions, action_log_probs, 
+            attacks, attack_log_probs,
                value_preds, rewards, masks, bad_masks=None, active_masks=None, available_actions=None):
         """
         Insert data into the buffer.
@@ -98,7 +104,9 @@ class SharedReplayBuffer(object):
         self.rnn_states[self.step + 1] = rnn_states_actor.copy()
         self.rnn_states_critic[self.step + 1] = rnn_states_critic.copy()
         self.actions[self.step] = actions.copy()
+        self.attacks[self.step] = attacks.copy()
         self.action_log_probs[self.step] = action_log_probs.copy()
+        self.attack_log_probs[self.step] = attack_log_probs.copy()
         self.value_preds[self.step] = value_preds.copy()
         self.rewards[self.step] = rewards.copy()
         self.masks[self.step + 1] = masks.copy()
@@ -251,6 +259,7 @@ class SharedReplayBuffer(object):
         rnn_states = self.rnn_states[:-1].reshape(-1, *self.rnn_states.shape[3:])
         rnn_states_critic = self.rnn_states_critic[:-1].reshape(-1, *self.rnn_states_critic.shape[3:])
         actions = self.actions.reshape(-1, self.actions.shape[-1])
+        attacks = self.attacks.reshape(-1, self.attacks.shape[-1])
         if self.available_actions is not None:
             available_actions = self.available_actions[:-1].reshape(-1, self.available_actions.shape[-1])
         value_preds = self.value_preds[:-1].reshape(-1, 1)
@@ -258,6 +267,7 @@ class SharedReplayBuffer(object):
         masks = self.masks[:-1].reshape(-1, 1)
         active_masks = self.active_masks[:-1].reshape(-1, 1)
         action_log_probs = self.action_log_probs.reshape(-1, self.action_log_probs.shape[-1])
+        attack_log_probs = self.attack_log_probs.reshape(-1, self.attack_log_probs.shape[-1])
         advantages = advantages.reshape(-1, 1)
 
         for indices in sampler:
@@ -267,6 +277,7 @@ class SharedReplayBuffer(object):
             rnn_states_batch = rnn_states[indices]
             rnn_states_critic_batch = rnn_states_critic[indices]
             actions_batch = actions[indices]
+            attacks_batch = attacks[indices]
             if self.available_actions is not None:
                 available_actions_batch = available_actions[indices]
             else:
@@ -276,13 +287,15 @@ class SharedReplayBuffer(object):
             masks_batch = masks[indices]
             active_masks_batch = active_masks[indices]
             old_action_log_probs_batch = action_log_probs[indices]
+            old_attack_log_probs_batch = attack_log_probs[indices]
             if advantages is None:
                 adv_targ = None
             else:
                 adv_targ = advantages[indices]
 
-            yield share_obs_batch, obs_batch, rnn_states_batch, rnn_states_critic_batch, actions_batch,\
+            yield share_obs_batch, obs_batch, rnn_states_batch, rnn_states_critic_batch, actions_batch, attacks_batch,\
                   value_preds_batch, return_batch, masks_batch, active_masks_batch, old_action_log_probs_batch,\
+                  old_attack_log_probs_batch,\
                   adv_targ, available_actions_batch
 
     def naive_recurrent_generator(self, advantages, num_mini_batch):

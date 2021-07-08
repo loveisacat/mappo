@@ -99,7 +99,7 @@ class AttackNet(nn.Module):
         inputs = inputs.detach().numpy()
         '''
         return inputs_clone
-    def backward(self, inputs):
+    def transback(self, inputs):
         for i in range (0,len(inputs)):
             for j in range (0,len(inputs[i])):
                 if inputs[i][j] >= 6:

@@ -101,11 +101,13 @@ class R_MAPPO():
         :return actor_grad_norm: (torch.Tensor) gradient norm from actor update.
         :return imp_weights: (torch.Tensor) importance sampling weights.
         """
-        share_obs_batch, obs_batch, rnn_states_batch, rnn_states_critic_batch, actions_batch, \
-        value_preds_batch, return_batch, masks_batch, active_masks_batch, old_action_log_probs_batch, \
+        share_obs_batch, obs_batch, rnn_states_batch, rnn_states_critic_batch, actions_batch, attacks_batch,\
+        value_preds_batch, return_batch, masks_batch, active_masks_batch, old_action_log_probs_batch, 
+        old_attack_log_probs_batch,\
         adv_targ, available_actions_batch = sample
 
         old_action_log_probs_batch = check(old_action_log_probs_batch).to(**self.tpdv)
+        old_attack_log_probs_batch = check(old_attack_log_probs_batch).to(**self.tpdv)
         adv_targ = check(adv_targ).to(**self.tpdv)
         value_preds_batch = check(value_preds_batch).to(**self.tpdv)
         return_batch = check(return_batch).to(**self.tpdv)
@@ -146,6 +148,43 @@ class R_MAPPO():
             actor_grad_norm = get_gard_norm(self.policy.actor.parameters())
 
         self.policy.actor_optimizer.step()
+
+
+        # Reshape to do in a single forward pass for all steps
+        values, attack_log_probs, dist_entropy = self.policy.evaluate_actions(share_obs_batch,
+                                                                              obs_batch, 
+                                                                              rnn_states_batch, 
+                                                                              rnn_states_critic_batch, 
+                                                                              attacks_batch, 
+                                                                              masks_batch, 
+                                                                              available_actions_batch,
+                                                                              active_masks_batch)
+        # attack update
+        imp_weights = torch.exp(attack_log_probs - old_attack_log_probs_batch)
+
+        surr1 = imp_weights * adv_targ
+        surr2 = torch.clamp(imp_weights, 1.0 - self.clip_param, 1.0 + self.clip_param) * adv_targ
+
+        if self._use_policy_active_masks:
+            policy_attack_loss = (-torch.sum(torch.min(surr1, surr2),
+                                             dim=-1,
+                                             keepdim=True) * active_masks_batch).sum() / active_masks_batch.sum()
+        else:
+            policy_attack_loss = -torch.sum(torch.min(surr1, surr2), dim=-1, keepdim=True).mean()
+
+        policy_loss = policy_attack_loss
+
+        self.policy.attack_optimizer.zero_grad()
+
+        if update_actor:
+            (policy_loss - dist_entropy * self.entropy_coef).backward()
+
+        if self._use_max_grad_norm:
+            actor_grad_norm = nn.utils.clip_grad_norm_(self.policy.attack.parameters(), self.max_grad_norm)
+        else:
+            actor_grad_norm = get_gard_norm(self.policy.attack.parameters())
+
+        self.policy.attack_optimizer.step()
 
         # critic update
         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)

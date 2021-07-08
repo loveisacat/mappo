@@ -1,7 +1,7 @@
 import torch
 from onpolicy.algorithms.r_mappo.algorithm.r_actor_critic import R_Actor, R_Critic
 from onpolicy.utils.util import update_linear_schedule
-
+from gym.spaces import Discrete
 
 class R_MAPPOPolicy:
     """
@@ -24,13 +24,23 @@ class R_MAPPOPolicy:
         self.obs_space = obs_space
         self.share_obs_space = cent_obs_space
         self.act_space = act_space
+        self.attack_space = Discrete(7)
 
         self.actor = R_Actor(args, self.obs_space, self.act_space, self.device)
+
+
+        self.attack = R_Actor(args, self.obs_space, self.attack_space, self.device)
+        
         self.critic = R_Critic(args, self.share_obs_space, self.device)
 
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(),
                                                 lr=self.lr, eps=self.opti_eps,
                                                 weight_decay=self.weight_decay)
+        
+        self.attack_optimizer = torch.optim.Adam(self.attack.parameters(),
+                                                lr=self.lr, eps=self.opti_eps,
+                                                weight_decay=self.weight_decay)
+
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(),
                                                  lr=self.critic_lr,
                                                  eps=self.opti_eps,
@@ -64,14 +74,32 @@ class R_MAPPOPolicy:
         :return rnn_states_actor: (torch.Tensor) updated actor network RNN states.
         :return rnn_states_critic: (torch.Tensor) updated critic network RNN states.
         """
+        split0 = available_actions[:,0:7]
+        split1 = torch.zeros(21,3).to(self.device)
         actions, action_log_probs, rnn_states_actor = self.actor(obs,
                                                                  rnn_states_actor,
                                                                  masks,
-                                                                 available_actions,
+                                                                 split0,
+                                                                 deterministic)
+          
+        attacks, attack_log_probs, rnn_states_attack = self.attack(obs,
+                                                                 rnn_states_actor,
+                                                                 masks,
+                                                                 split1,
                                                                  deterministic)
 
+        count = 0
+        for act in actions:
+            if act >= 6:
+                 actions[count] = attacks[count] + actions[count]
+                 #action_log_probs[count] = action_log_probs_1[count]
+            count += 1
+
+
+
+
         values, rnn_states_critic = self.critic(cent_obs, rnn_states_critic, masks)
-        return values, actions, action_log_probs, rnn_states_actor, rnn_states_critic
+        return values, actions, action_log_probs, rnn_states_actor, rnn_states_critic, attacks, attack_log_probs
 
     def get_values(self, cent_obs, rnn_states_critic, masks):
         """
@@ -109,7 +137,7 @@ class R_MAPPOPolicy:
                                                                      masks,
                                                                      available_actions,
                                                                      active_masks)
-
+        
         values, _ = self.critic(cent_obs, rnn_states_critic, masks)
         return values, action_log_probs, dist_entropy
 
