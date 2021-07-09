@@ -1,5 +1,5 @@
 import torch
-from onpolicy.algorithms.r_mappo.algorithm.r_actor_critic import R_Actor, R_Critic
+from onpolicy.algorithms.r_mappo.algorithm.r_actor_critic import R_Actor, R_Critic, R_Attack
 from onpolicy.utils.util import update_linear_schedule
 from gym.spaces import Discrete
 
@@ -24,12 +24,12 @@ class R_MAPPOPolicy:
         self.obs_space = obs_space
         self.share_obs_space = cent_obs_space
         self.act_space = act_space
-        self.attack_space = Discrete(7)
+        self.attack_space = Discrete(3)
 
         self.actor = R_Actor(args, self.obs_space, self.act_space, self.device)
 
 
-        self.attack = R_Actor(args, self.obs_space, self.attack_space, self.device)
+        self.attack = R_Attack(args, self.obs_space, self.attack_space, self.device)
         
         self.critic = R_Critic(args, self.share_obs_space, self.device)
 
@@ -90,7 +90,7 @@ class R_MAPPOPolicy:
 
         count = 0
         for act in actions:
-            if act >= 6:
+            if act >= 6 and attacks[count] <=2:
                  actions[count] = attacks[count] + actions[count]
                  #action_log_probs[count] = action_log_probs_1[count]
             count += 1
