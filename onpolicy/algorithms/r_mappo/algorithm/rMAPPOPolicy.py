@@ -90,7 +90,7 @@ class R_MAPPOPolicy:
 
         count = 0
         for act in actions:
-            if act >= 6 and attacks[count] <=2:
+            if act >= 6:
                  actions[count] = attacks[count] + actions[count]
                  #action_log_probs[count] = action_log_probs_1[count]
             count += 1
