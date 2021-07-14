@@ -5,6 +5,7 @@ from onpolicy.algorithms.utils.cnn import CNNBase
 from onpolicy.algorithms.utils.mlp import MLPBase
 from onpolicy.algorithms.utils.rnn import RNNLayer
 from onpolicy.algorithms.utils.act import ACTLayer
+from onpolicy.algorithms.utils.attacknet import AttackNet
 from onpolicy.algorithms.utils.popart import PopArt
 from onpolicy.utils.util import get_shape_from_obs_space
 from gym.spaces import Discrete
@@ -36,12 +37,7 @@ class R_Actor(nn.Module):
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
             self.rnn = RNNLayer(self.hidden_size, self.hidden_size, self._recurrent_N, self._use_orthogonal)
 
-        #self.action_space0 = []
-        #self.action_space0.append(Discrete(7))
-        #self.action_space1 = []
-        #self.action_space1.append(Discrete(3))
         self.act = ACTLayer(action_space, self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
-        #self.act1 = ACTLayer(self.action_space1[0], self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
 
         self.to(device)
 
@@ -218,11 +214,12 @@ class R_Attack(nn.Module):
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
             self.rnn = RNNLayer(self.hidden_size, self.hidden_size, self._recurrent_N, self._use_orthogonal)
 
-        self.action_space0 = []
-        self.action_space0.append(Discrete(7))
-        self.action_space1 = []
-        self.action_space1.append(Discrete(3))
-        self.act = ACTLayer(action_space, self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
+        #self.action_space0 = []
+        #self.action_space0.append(Discrete(7))
+        #self.action_space1 = []
+        #self.action_space1.append(Discrete(3))
+        #self.act = ACTLayer(action_space, self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
+        self.act = AttackNet(action_space, self.hidden_size, self._use_orthogonal, self._gain, obs_space[2][0], device)
 
         self.to(device)
 

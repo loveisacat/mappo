@@ -56,9 +56,9 @@ class Runner(object):
 
         #darnet        
         rep = DarNet(self.num_agents, 5, self.device)
-        atta = AttackNet(self.num_agents, self.device)
+        #atta = AttackNet(self.num_agents, self.device)
         self.rep = rep
-        self.atta = atta
+        #self.atta = atta
 
 
         if self.use_wandb:
