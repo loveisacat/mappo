@@ -8,6 +8,7 @@ from onpolicy.algorithms.utils.util import check
 class R_MAPPO():
     """
     Trainer class for MAPPO to update policies.
+        '''
     :param args: (argparse.Namespace) arguments containing relevant model, policy, and env information.
     :param policy: (R_MAPPO_Policy) policy to update.
     :param device: (torch.device) specifies the device to run on (cpu/gpu).
@@ -150,7 +151,7 @@ class R_MAPPO():
         self.policy.actor_optimizer.step()
 
 
-
+        '''
         # critic update
         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
 
@@ -164,8 +165,7 @@ class R_MAPPO():
             critic_grad_norm = get_gard_norm(self.policy.critic.parameters())
 
         self.policy.critic_optimizer.step()
-
-
+        '''
         # Reshape to do in a single forward pass for all steps
         share_obs_batch_new = np.empty_like(share_obs_batch)
         obs_batch_new = np.empty_like(obs_batch)
@@ -179,7 +179,7 @@ class R_MAPPO():
         adv_targ_new = torch.empty_like(adv_targ)
         x = y = 0
         for act in actions_batch:
-            if act == 6:
+            if act >= 0:
                 share_obs_batch_new[y] = share_obs_batch[x]
                 obs_batch_new[y] = obs_batch[x]
                 attacks_batch_new[y] = attacks_batch[x]
@@ -239,7 +239,6 @@ class R_MAPPO():
             actor_grad_norm = get_gard_norm(self.policy.attack.parameters())
 
         self.policy.attack_optimizer.step()
-        '''
         # critic update
         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
 
@@ -253,7 +252,6 @@ class R_MAPPO():
             critic_grad_norm = get_gard_norm(self.policy.critic.parameters())
 
         self.policy.critic_optimizer.step()
-        '''
         return value_loss, critic_grad_norm, policy_loss, dist_entropy, actor_grad_norm, imp_weights
 
     def train(self, buffer, update_actor=True):

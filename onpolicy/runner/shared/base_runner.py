@@ -5,7 +5,7 @@ import torch
 from tensorboardX import SummaryWriter
 from onpolicy.utils.shared_buffer import SharedReplayBuffer
 from onpolicy.algorithms.utils.darnet import DarNet
-from onpolicy.algorithms.utils.attacknet import AttackNet
+from onpolicy.algorithms.utils.tranback import BackNet
 
 
 
@@ -56,9 +56,9 @@ class Runner(object):
 
         #darnet        
         rep = DarNet(self.num_agents, 5, self.device)
-        #atta = AttackNet(self.num_agents, self.device)
+        atta = BackNet(self.device)
         self.rep = rep
-        #self.atta = atta
+        self.atta = atta
 
 
         if self.use_wandb:
