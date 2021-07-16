@@ -33,6 +33,26 @@ class AttackNet(nn.Module):
                     inputs[i][j] = 6
         return inputs
 
+    def evaluate_attacks(self, x, action, available_actions=None, active_masks=None):
+        """
+        Compute log probability and entropy of given actions.
+        :param x: (torch.Tensor) input to network.
+        :param action: (torch.Tensor) actions whose entropy and log probability to evaluate.
+        :param available_actions: (torch.Tensor) denotes which actions are available to agent
+                                                              (if None, all actions available)
+        :param active_masks: (torch.Tensor) denotes whether an agent is active or dead.
+
+        :return action_log_probs: (torch.Tensor) log probabilities of the input actions.
+        :return dist_entropy: (torch.Tensor) action distribution entropy for the given inputs.
+        """
+        action_logits = self.action_out(x, available_actions)
+        action_log_probs = action_logits.log_probs(action)
+        if active_masks is not None:
+                dist_entropy = (action_logits.entropy()*active_masks.squeeze(-1)).sum()/active_masks.sum()
+        else:
+                dist_entropy = action_logits.entropy().mean()
+        
+        return action_log_probs, dist_entropy
 
 if __name__ == '__main__':
     pass
