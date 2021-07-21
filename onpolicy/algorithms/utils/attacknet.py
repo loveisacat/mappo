@@ -33,6 +33,14 @@ class AttackNet(nn.Module):
                     inputs[i][j] = 6
         return inputs
 
+    def evaluate_attacks(self, x, action, available_actions=None, active_masks=None):
+        action_logits = self.action_out(x, available_actions)
+        action_log_probs = action_logits.log_probs(action)
+        if active_masks is not None:
+                dist_entropy = (action_logits.entropy()*active_masks.squeeze(-1)).sum()/active_masks.sum()
+        else:
+                dist_entropy = action_logits.entropy().mean()
+        return action_log_probs, dist_entropy
 
 if __name__ == '__main__':
     pass

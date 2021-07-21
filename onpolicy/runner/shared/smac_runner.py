@@ -44,7 +44,7 @@ class SMACRunner(Runner):
                 obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(attacks)
 
                 #actions = self.atta.to(self.device).transback(actions)
-                available_actions = available_actions[:,:,:9]
+                #available_actions = available_actions[:,:,:9]
 
                 #obs = self.rep.to(self.device).forward(obs)
                 

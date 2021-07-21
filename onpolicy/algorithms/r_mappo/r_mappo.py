@@ -203,7 +203,7 @@ class R_MAPPO():
         #print(y,share_obs_batch_new.shape,obs_batch_new.shape,attacks_batch_new.shape)
         #print(x,share_obs_batch.shape,obs_batch.shape,attacks_batch.shape)
 
-        values, attack_log_probs, dist_entropy = self.policy.evaluate_actions(share_obs_batch_new,
+        values, attack_log_probs, dist_entropy = self.policy.evaluate_attacks(share_obs_batch_new,
                                                                               obs_batch_new, 
                                                                               rnn_states_batch, 
                                                                               rnn_states_critic_batch, 
@@ -239,6 +239,7 @@ class R_MAPPO():
             actor_grad_norm = get_gard_norm(self.policy.attack.parameters())
 
         self.policy.attack_optimizer.step()
+
         # critic update
         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
 
