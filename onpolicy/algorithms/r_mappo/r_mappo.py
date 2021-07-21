@@ -239,7 +239,6 @@ class R_MAPPO():
             actor_grad_norm = get_gard_norm(self.policy.attack.parameters())
 
         self.policy.attack_optimizer.step()
-
         
         # critic update
         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch_new)
