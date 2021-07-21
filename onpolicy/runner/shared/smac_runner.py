@@ -40,8 +40,8 @@ class SMACRunner(Runner):
                 #actions = self.atta.to(self.device).forward(actions, rnn_states, 99)
                 
                 # Obser reward and next obs
-                #obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
-                obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(attacks)
+                obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(actions)
+                #obs, share_obs, rewards, dones, infos, available_actions = self.envs.step(attacks)
 
                 #actions = self.atta.to(self.device).transback(actions)
                 #available_actions = available_actions[:,:,:9]
@@ -118,7 +118,7 @@ class SMACRunner(Runner):
 
             
         #obs = self.rep.to(self.device).forward(obs)
-        available_actions = available_actions[:,:,:9]
+        available_actions = available_actions[:,:,:7]
         #share_obs = obs
 
         # replay buffer

@@ -25,8 +25,8 @@ class R_MAPPOPolicy:
         self.obs_space = obs_space
         self.share_obs_space = cent_obs_space
         self.act_space = act_space
-        #self.attack_space = Discrete(3)
-        self.attack_space = Discrete(9)
+        self.attack_space = Discrete(3)
+        #self.attack_space = Discrete(9)
 
         self.actor = R_Actor(args, self.obs_space, self.act_space, self.device)
 
@@ -76,10 +76,11 @@ class R_MAPPOPolicy:
         :return rnn_states_actor: (torch.Tensor) updated actor network RNN states.
         :return rnn_states_critic: (torch.Tensor) updated critic network RNN states.
         """
-        split0 = available_actions[:,0:9]
+        split0 = available_actions[:,0:7]
+        split1 = np.zeros((21,3))
         #split1 = np.zeros((21,2))
         #split1 = np.hstack((split0,split1))
-        split1 = split0
+        #split1 = split0
         actions, action_log_probs, rnn_states_actor = self.actor(obs,
                                                                  rnn_states_actor,
                                                                  masks,
@@ -92,7 +93,6 @@ class R_MAPPOPolicy:
                                                                  split1,
                                                                  deterministic)
 
-        '''
         count = 0
         for act in actions:
             if act >= 6:
@@ -100,7 +100,6 @@ class R_MAPPOPolicy:
                  #actions[count] = attacks[count]
                  #action_log_probs[count] = action_log_probs_1[count]
             count += 1
-        '''
 
 
         values, rnn_states_critic = self.critic(cent_obs, rnn_states_critic, masks)
