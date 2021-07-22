@@ -150,8 +150,8 @@ class R_MAPPO():
 
         self.policy.actor_optimizer.step()
 
-        '''
         # critic update
+        '''
         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
 
         self.policy.critic_optimizer.zero_grad()
@@ -177,9 +177,11 @@ class R_MAPPO():
         available_actions_batch_new = np.empty_like(available_actions_batch)
         old_attack_log_probs_batch_new = torch.empty_like(old_attack_log_probs_batch)
         adv_targ_new = torch.empty_like(adv_targ)
+        value_preds_batch_new = torch.empty_like(value_preds_batch)
+        return_batch_new = torch.empty_like(return_batch)
         x = y = 0
         for act in actions_batch:
-            if act >= 6:
+            if act >= 0:
                 share_obs_batch_new[y] = share_obs_batch[x]
                 obs_batch_new[y] = obs_batch[x]
                 attacks_batch_new[y] = attacks_batch[x]
@@ -188,6 +190,8 @@ class R_MAPPO():
                 available_actions_batch_new[y] = available_actions_batch[x]
                 old_attack_log_probs_batch_new[y] = old_attack_log_probs_batch[x]
                 adv_targ_new[y] = adv_targ[x]
+                value_preds_batch_new[y] = value_preds_batch[x]
+                return_batch_new[y] = return_batch[x]
                 y += 1
             x += 1
 
@@ -199,11 +203,15 @@ class R_MAPPO():
         available_actions_batch_new = available_actions_batch_new[0:y]
         old_attack_log_probs_batch_new = old_attack_log_probs_batch_new[0:y]
         adv_targ_new = adv_targ_new[0:y]
+        value_preds_batch_new = value_preds_batch_new[0:y]
+        return_batch_new = return_batch_new[0:y]
 
         #print(y,share_obs_batch_new.shape,obs_batch_new.shape,attacks_batch_new.shape)
         #print(x,share_obs_batch.shape,obs_batch.shape,attacks_batch.shape)
+        available_actions_batch_new = available_actions_batch_new[:,3]
 
-        values, attack_log_probs, dist_entropy = self.policy.evaluate_attacks(share_obs_batch_new,
+        if y > 0:
+         values_attack, attack_log_probs, dist_entropy = self.policy.evaluate_attacks(share_obs_batch_new,
                                                                               obs_batch_new, 
                                                                               rnn_states_batch, 
                                                                               rnn_states_critic_batch, 
@@ -213,47 +221,46 @@ class R_MAPPO():
                                                                               active_masks_batch_new)
 
        
-        # attack update
-        imp_weights = torch.exp(attack_log_probs - old_attack_log_probs_batch_new)
+         # attack update
+         imp_weights = torch.exp(attack_log_probs - old_attack_log_probs_batch_new)
 
-        surr1 = imp_weights * adv_targ_new
-        surr2 = torch.clamp(imp_weights, 1.0 - self.clip_param, 1.0 + self.clip_param) * adv_targ_new
+         surr1 = imp_weights * adv_targ_new
+         surr2 = torch.clamp(imp_weights, 1.0 - self.clip_param, 1.0 + self.clip_param) * adv_targ_new
 
-        if self._use_policy_active_masks:
+         if self._use_policy_active_masks:
             policy_attack_loss = (-torch.sum(torch.min(surr1, surr2),
                                              dim=-1,
                                              keepdim=True) * active_masks_batch_new).sum() / active_masks_batch_new.sum()
-        else:
+         else:
             policy_attack_loss = -torch.sum(torch.min(surr1, surr2), dim=-1, keepdim=True).mean()
 
-        policy_loss = policy_attack_loss
+         policy_loss = policy_attack_loss
 
-        self.policy.attack_optimizer.zero_grad()
+         self.policy.attack_optimizer.zero_grad()
 
-        if update_actor:
+         if update_actor:
             (policy_loss - dist_entropy * self.entropy_coef).backward()
 
-        if self._use_max_grad_norm:
+         if self._use_max_grad_norm:
             actor_grad_norm = nn.utils.clip_grad_norm_(self.policy.attack.parameters(), self.max_grad_norm)
-        else:
+         else:
             actor_grad_norm = get_gard_norm(self.policy.attack.parameters())
 
-        self.policy.attack_optimizer.step()
+         self.policy.attack_optimizer.step()
         
-        # critic update
-        value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch_new)
+         # critic update
+         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
 
-        self.policy.critic_optimizer.zero_grad()
+         self.policy.critic_optimizer.zero_grad()
 
-        (value_loss * self.value_loss_coef).backward()
+         (value_loss * self.value_loss_coef).backward()
 
-        if self._use_max_grad_norm:
+         if self._use_max_grad_norm:
             critic_grad_norm = nn.utils.clip_grad_norm_(self.policy.critic.parameters(), self.max_grad_norm)
-        else:
+         else:
             critic_grad_norm = get_gard_norm(self.policy.critic.parameters())
 
-        self.policy.critic_optimizer.step()
-        
+         self.policy.critic_optimizer.step()
         return value_loss, critic_grad_norm, policy_loss, dist_entropy, actor_grad_norm, imp_weights
 
     def train(self, buffer, update_actor=True):
