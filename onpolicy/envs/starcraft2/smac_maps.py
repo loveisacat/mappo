@@ -41,6 +41,15 @@ map_param_registry = {
         "unit_type_bits": 0,
         "map_type": "marines",
     },
+    "16m": {
+        "n_agents": 16,
+        "n_enemies": 16,
+        "limit": 130,
+        "a_race": "T",
+        "b_race": "T",
+        "unit_type_bits": 0,
+        "map_type": "marines",
+    },
     "25m": {
         "n_agents": 25,
         "n_enemies": 25,

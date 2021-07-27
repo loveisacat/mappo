@@ -150,8 +150,10 @@ class R_MAPPO():
 
         self.policy.actor_optimizer.step()
 
+        # act update
+        self.policy.act_optimizer.step()
+
         # critic update
-        '''
         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
 
         self.policy.critic_optimizer.zero_grad()
@@ -165,7 +167,6 @@ class R_MAPPO():
 
         self.policy.critic_optimizer.step()
         '''
-
         # Reshape to do in a single forward pass for all steps
         share_obs_batch_new = np.empty_like(share_obs_batch)
         obs_batch_new = np.empty_like(obs_batch)
@@ -181,7 +182,7 @@ class R_MAPPO():
         return_batch_new = torch.empty_like(return_batch)
         x = y = 0
         for act in actions_batch:
-            if act >= 0:
+            if act >= 6:
                 share_obs_batch_new[y] = share_obs_batch[x]
                 obs_batch_new[y] = obs_batch[x]
                 attacks_batch_new[y] = attacks_batch[x]
@@ -208,7 +209,8 @@ class R_MAPPO():
 
         #print(y,share_obs_batch_new.shape,obs_batch_new.shape,attacks_batch_new.shape)
         #print(x,share_obs_batch.shape,obs_batch.shape,attacks_batch.shape)
-        available_actions_batch_new = available_actions_batch_new[:,3]
+        #available_actions_batch_new = available_actions_batch_new[:,0:3]
+        
 
         if y > 0:
          values_attack, attack_log_probs, dist_entropy = self.policy.evaluate_attacks(share_obs_batch_new,
@@ -248,19 +250,20 @@ class R_MAPPO():
 
          self.policy.attack_optimizer.step()
         
-         # critic update
-         value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
+        # critic update
+        value_loss = self.cal_value_loss(values, value_preds_batch, return_batch, active_masks_batch)
 
-         self.policy.critic_optimizer.zero_grad()
+        self.policy.critic_optimizer.zero_grad()
 
-         (value_loss * self.value_loss_coef).backward()
+        (value_loss * self.value_loss_coef).backward()
 
-         if self._use_max_grad_norm:
+        if self._use_max_grad_norm:
             critic_grad_norm = nn.utils.clip_grad_norm_(self.policy.critic.parameters(), self.max_grad_norm)
-         else:
+        else:
             critic_grad_norm = get_gard_norm(self.policy.critic.parameters())
 
-         self.policy.critic_optimizer.step()
+        self.policy.critic_optimizer.step()
+        '''
         return value_loss, critic_grad_norm, policy_loss, dist_entropy, actor_grad_norm, imp_weights
 
     def train(self, buffer, update_actor=True):

@@ -86,7 +86,8 @@ class Runner(object):
                             self.envs.action_space[0],
                             device = self.device)
 
-        #self.model_dir = "/home/stephen/codebase/mappo/onpolicy/scripts/results/StarCraft2/3m/mappo/smac/run1/models"
+        #self.model_dir = "/home/stephen/codebase/mappo/onpolicy/scripts/results/StarCraft2/4m/mappo/smac/run1/models"
+        #self.model_dir = "/home/bchen7/codebase/mappo/onpolicy/scripts/results/StarCraft2/4m/mappo/smac/run1/models"
         if self.model_dir is not None:
             self.restore()
 
@@ -99,7 +100,6 @@ class Runner(object):
                                         self.envs.observation_space[0],
                                         share_observation_space,
                                         self.envs.action_space[0])
-
     def run(self):
         """Collect training data, perform training updates, and evaluate policy."""
         raise NotImplementedError
@@ -142,24 +142,26 @@ class Runner(object):
         torch.save(self.rep.state_dict(), str(self.save_dir) + "/darnet.pt")
         policy_actor = self.trainer.policy.actor
         torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
-        ''' 
+        policy_critic = self.trainer.policy.critic
+        torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic.pt")
+        '''
         for name in self.rep.state_dict():
             print(name,'\t',self.rep.state_dict()[name].shape)
+        print("================")
         
         for name in policy_actor.state_dict():
             print(name,'\t',policy_actor.state_dict()[name].shape)
         
+        print("================")
+        for name in policy_critic.state_dict():
+            print(name,'\t',policy_critic.state_dict()[name].shape)
         '''
-        policy_critic = self.trainer.policy.critic
-        torch.save(policy_critic.state_dict(), str(self.save_dir) + "/critic.pt")
-
 
     def restore(self):
         """Restore policy's networks from a saved model."""
-        '''
         policy_actor_state_dict = torch.load(str(self.model_dir) + '/actor.pt')
         self.policy.actor.load_state_dict(policy_actor_state_dict)
-        '''
+        
         self.rep.load_state_dict(torch.load(str(self.model_dir) + '/darnet.pt'))
         
         if not self.all_args.use_render:

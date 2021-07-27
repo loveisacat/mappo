@@ -1,5 +1,6 @@
 import torch
 from onpolicy.algorithms.r_mappo.algorithm.r_actor_critic import R_Actor, R_Critic, R_Attack
+from onpolicy.algorithms.utils.act import ACTLayer
 from onpolicy.utils.util import update_linear_schedule
 from gym.spaces import Discrete
 import numpy as np
@@ -25,9 +26,9 @@ class R_MAPPOPolicy:
         self.obs_space = obs_space
         self.share_obs_space = cent_obs_space
         self.act_space = act_space
-        self.attack_space = Discrete(3)
-        #self.attack_space = Discrete(9)
+        self.attack_space = Discrete(9)
 
+        self.act = ACTLayer(act_space, args.hidden_size, args.use_orthogonal, args.gain, obs_space[2][0], device)
         self.actor = R_Actor(args, self.obs_space, self.act_space, self.device)
 
 
@@ -38,16 +39,21 @@ class R_MAPPOPolicy:
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(),
                                                 lr=self.lr, eps=self.opti_eps,
                                                 weight_decay=self.weight_decay)
-        
-        self.attack_optimizer = torch.optim.Adam(self.attack.parameters(),
+        self.act_optimizer = torch.optim.Adam(self.act.parameters(),
                                                 lr=self.lr, eps=self.opti_eps,
                                                 weight_decay=self.weight_decay)
 
+        '''
+        self.attack_optimizer = torch.optim.Adam(self.attack.parameters(),
+                                                lr=self.lr, eps=self.opti_eps,
+                                                weight_decay=self.weight_decay)
+        '''
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(),
                                                  lr=self.critic_lr,
                                                  eps=self.opti_eps,
                                                  weight_decay=self.weight_decay)
 
+        self.act.to(device)
     def lr_decay(self, episode, episodes):
         """
         Decay the actor and critic learning rates.
@@ -76,23 +82,33 @@ class R_MAPPOPolicy:
         :return rnn_states_actor: (torch.Tensor) updated actor network RNN states.
         :return rnn_states_critic: (torch.Tensor) updated critic network RNN states.
         """
-        split0 = available_actions[:,0:7]
-        split1 = np.zeros((21,3))
-        #split1 = np.zeros((21,2))
+        #split0 = available_actions[:,0:7]
+        #split1 = np.zeros((21,3))
         #split1 = np.hstack((split0,split1))
+        #split1 = np.zeros((21,9))
+        #split1 = np.zeros((21,3))
+        #split1 = np.hstack((split0,split1))
+        #split0 = available_actions
         #split1 = split0
+        '''
         actions, action_log_probs, rnn_states_actor = self.actor(obs,
                                                                  rnn_states_actor,
                                                                  masks,
-                                                                 split0,
+                                                                 available_actions,
                                                                  deterministic)
-          
+        '''
+        actor_features, ava_actions, deterministic, rnn_states_actor  = self.actor(obs,  
+                                                                 rnn_states_actor,
+                                                                 masks,
+                                                                 available_actions,
+                                                                 deterministic)
+        actions, action_log_probs = self.act(actor_features, ava_actions, deterministic)
+        '''
         attacks, attack_log_probs, rnn_states_attack = self.attack(obs,
                                                                  rnn_states_actor,
                                                                  masks,
                                                                  split1,
                                                                  deterministic)
-
         count = 0
         for act in actions:
             if act >= 6:
@@ -100,8 +116,13 @@ class R_MAPPOPolicy:
                  #actions[count] = attacks[count]
                  #action_log_probs[count] = action_log_probs_1[count]
             count += 1
-
-
+        count = 0
+        for act in actions:
+           actions[count] = attacks[count]
+           count += 1
+        '''
+        attacks = actions
+        attack_log_probs = action_log_probs
         values, rnn_states_critic = self.critic(cent_obs, rnn_states_critic, masks)
         return values, actions, action_log_probs, rnn_states_actor, rnn_states_critic, attacks, attack_log_probs
 
@@ -135,13 +156,16 @@ class R_MAPPOPolicy:
         :return action_log_probs: (torch.Tensor) log probabilities of the input actions.
         :return dist_entropy: (torch.Tensor) action distribution entropy for the given inputs.
         """
-        action_log_probs, dist_entropy = self.actor.evaluate_actions(obs,
+        #action_log_probs, dist_entropy = self.actor.evaluate_actions(obs,
+        actor_features,action,ava_actions,active_masks = self.actor.evaluate_actions(obs,
                                                                      rnn_states_actor,
                                                                      action,
                                                                      masks,
                                                                      available_actions,
                                                                      active_masks)
-        
+        action_log_probs, dist_entropy = self.act.evaluate_actions(actor_features,
+                                                                   action, ava_actions,
+                                                                   active_masks)
         values, _ = self.critic(cent_obs, rnn_states_critic, masks)
         return values, action_log_probs, dist_entropy
 
@@ -163,6 +187,7 @@ class R_MAPPOPolicy:
         :return action_log_probs: (torch.Tensor) log probabilities of the input actions.
         :return dist_entropy: (torch.Tensor) action distribution entropy for the given inputs.
         """
+        #available_actions=None
         action_log_probs, dist_entropy = self.attack.evaluate_attacks(obs,
                                                                      rnn_states_actor,
                                                                      action,
@@ -171,6 +196,7 @@ class R_MAPPOPolicy:
                                                                      active_masks)
         
         values, _ = self.critic(cent_obs, rnn_states_critic, masks)
+        #values = None
         return values, action_log_probs, dist_entropy
 
 
